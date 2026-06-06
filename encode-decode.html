@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LSB 隐写工具</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: #f0f2f5;
+            padding: 16px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+            padding: 24px 20px;
+            max-width: 520px;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 22px;
+            color: #1a1a2e;
+            margin-bottom: 4px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #888;
+            font-size: 13px;
+            margin-bottom: 20px;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f0f2f5;
+            border-radius: 10px;
+            padding: 3px;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 10px 0;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #666;
+            border: none;
+            background: none;
+        }
+
+        .tab.active {
+            background: white;
+            color: #1a73e8;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .panel {
+            display: none;
+        }
+
+        .panel.active {
+            display: block;
+        }
+
+        .upload-area {
+            border: 2px dashed #ddd;
+            border-radius: 12px;
+            padding: 30px 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.25s;
+            background: #fafafa;
+            margin-bottom: 16px;
+            position: relative;
+        }
+
+        .upload-area:hover,
+        .upload-area.dragover {
+            border-color: #1a73e8;
+            background: #e8f0fe;
+        }
+
+        .upload-area.has-image {
+            border-color: #34a853;
+            background: #e6f4ea;
+        }
+
+        .upload-area.dragover {
+            border-color: #ff6d01;
+            background: #fff3e0;
+            transform: scale(1.02);
+            box-shadow: 0 4px 20px rgba(255, 109, 1, 0.15);
+        }
+
+        .upload-area svg {
+            width: 40px;
+            height: 40px;
+            fill: #aaa;
+            margin-bottom: 8px;
+            pointer-events: none;
+        }
+
+        .upload-area p {
+            color: #666;
+            font-size: 14px;
+            pointer-events: none;
+        }
+
+        .upload-area .hint {
+            font-size: 12px;
+            color: #aaa;
+            margin-top: 6px;
+            pointer-events: none;
+        }
+
+        .upload-area .drag-hint {
+            display: none;
+            font-size: 13px;
+            color: #ff6d01;
+            font-weight: 600;
+            margin-top: 4px;
+            pointer-events: none;
+        }
+
+        .upload-area.dragover .drag-hint {
+            display: block;
+        }
+
+        .upload-area.dragover p,
+        .upload-area.dragover .hint {
+            display: none;
+        }
+
+        .upload-area.dragover svg {
+            fill: #ff6d01;
+        }
+
+        .upload-area.has-image.dragover p,
+        .upload-area.has-image.dragover .hint {
+            display: none;
+        }
+
+        .upload-area.has-image.dragover .drag-hint {
+            display: block;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .preview-box {
+            display: none;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .preview-box img {
+            max-width: 100%;
+            max-height: 220px;
+            border-radius: 10px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .preview-box .fname {
+            margin-top: 6px;
+            font-size: 12px;
+            color: #888;
+        }
+
+        .field {
+            margin-bottom: 14px;
+        }
+
+        .field label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .field textarea,
+        .field input,
+        .field select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1.5px solid #ddd;
+            border-radius: 8px;
+            font-size: 15px;
+            font-family: inherit;
+            transition: border 0.2s;
+            outline: none;
+        }
+
+        .field textarea:focus,
+        .field input:focus,
+        .field select:focus {
+            border-color: #1a73e8;
+        }
+
+        .field textarea {
+            resize: vertical;
+            min-height: 56px;
+        }
+
+        .field select {
+            background: white;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M6 8L1 3h10z' fill='%23666'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 32px;
+        }
+
+        .field-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .field-row .field {
+            flex: 1;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 13px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: white;
+            background: #1a73e8;
+            margin-top: 6px;
+        }
+
+        .btn:hover {
+            background: #1557b0;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn:disabled {
+            background: #bbb;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-success {
+            background: #34a853;
+        }
+
+        .btn-success:hover {
+            background: #2d9249;
+        }
+
+        .result-box {
+            display: none;
+            margin-top: 18px;
+            padding: 14px;
+            border-radius: 10px;
+            background: #e6f4ea;
+            border: 1px solid #34a853;
+            word-break: break-all;
+        }
+
+        .result-box.error {
+            background: #fce8e6;
+            border-color: #ea4335;
+        }
+
+        .result-box .label {
+            font-size: 12px;
+            color: #555;
+            margin-bottom: 4px;
+        }
+
+        .result-box .content {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1a1a2e;
+            font-family: 'Courier New', monospace;
+            background: white;
+            padding: 10px 12px;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+            margin-top: 4px;
+        }
+
+        .copy-btn {
+            margin-top: 8px;
+            padding: 7px 18px;
+            border: none;
+            border-radius: 6px;
+            background: #34a853;
+            color: white;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .copy-btn:hover {
+            background: #2d9249;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 10px;
+        }
+
+        .spinner {
+            border: 3px solid #eee;
+            border-top: 3px solid #1a73e8;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 18px;
+            font-size: 11px;
+            color: #bbb;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🖼️ LSB 隐写工具</h1>
+        <p class="subtitle">将密码藏入图片 / 从图片提取密码 · 支持拖拽上传</p>
+
+        <div class="tabs">
+            <button class="tab active" data-tab="encode" onclick="switchTab('encode')">🔒 加密</button>
+            <button class="tab" data-tab="decode" onclick="switchTab('decode')">🔓 解密</button>
+        </div>
+
+        <!-- ========== 加密面板 ========== -->
+        <div class="panel active" id="panel-encode">
+            <div class="upload-area" id="enc-upload" onclick="document.getElementById('enc-file').click()">
+                <svg viewBox="0 0 24 24">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM6 20V4h7v5h5v11H6z" />
+                </svg>
+                <p>选择一张图片作为载体 或 拖拽文件到此处</p>
+                <p class="hint">支持 PNG / BMP，建议使用 1920×1080 以上</p>
+                <p class="drag-hint">📂 松开鼠标即可上传</p>
+            </div>
+            <input type="file" id="enc-file" accept="image/png,image/bmp,.png,.bmp" onchange="onEncFile(this.files[0])">
+            <div class="preview-box" id="enc-preview">
+                <img id="enc-preview-img" src="">
+                <div class="fname" id="enc-fname"></div>
+            </div>
+
+            <div class="field">
+                <label>要隐藏的密码 / 文本</label>
+                <textarea id="enc-text" rows="2" placeholder="输入要隐藏的文本，支持中文"></textarea>
+            </div>
+
+            <div class="field-row">
+                <div class="field">
+                    <label>输出文件名</label>
+                    <input id="enc-outname" value="output.png" placeholder="output.png">
+                </div>
+                <div class="field">
+                    <label>输出格式</label>
+                    <select id="enc-format" onchange="onFormatChange()">
+                        <option value="png">PNG（通用推荐）</option>
+                        <option value="bmp">BMP（无损位图）</option>
+                    </select>
+                </div>
+            </div>
+
+            <button class="btn" id="enc-btn" onclick="doEncode()" disabled>🔒 开始加密</button>
+            <div class="loading" id="enc-loading">
+                <div class="spinner"></div>
+            </div>
+            <div class="result-box" id="enc-result"></div>
+        </div>
+
+        <!-- ========== 解密面板 ========== -->
+        <div class="panel" id="panel-decode">
+            <div class="upload-area" id="dec-upload" onclick="document.getElementById('dec-file').click()">
+                <svg viewBox="0 0 24 24">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM6 20V4h7v5h5v11H6z" />
+                </svg>
+                <p>选择已嵌入密码的图片 或 拖拽文件到此处</p>
+                <p class="hint">支持 PNG / BMP</p>
+                <p class="drag-hint">📂 松开鼠标即可上传</p>
+            </div>
+            <input type="file" id="dec-file" accept="image/png,image/bmp,.png,.bmp" onchange="onDecFile(this.files[0])">
+            <div class="preview-box" id="dec-preview">
+                <img id="dec-preview-img" src="">
+                <div class="fname" id="dec-fname"></div>
+            </div>
+
+            <button class="btn btn-success" id="dec-btn" onclick="doDecode()" disabled>🔍 提取密码</button>
+            <div class="loading" id="dec-loading">
+                <div class="spinner"></div>
+            </div>
+            <div class="result-box" id="dec-result"></div>
+        </div>
+
+        <div class="footer">纯本地运行，图片不会上传到任何服务器</div>
+    </div>
+
+    <script>
+        // ===== 工具函数 =====
+        function switchTab(name) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+            document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + name));
+        }
+
+        // ----- 文本 ↔ 二进制（UTF-8 + 固定结束标记） -----
+        // 结束标记：0x00 0x00 0xFF 0xFE （4字节，不会与任何 UTF-8 文本冲突）
+        // 二进制：00000000 00000000 11111111 11111110
+        const END_MARKER_BITS = '00000000000000001111111111111110';
+
+        function textToBits(text) {
+            const encoder = new TextEncoder();
+            const bytes = encoder.encode(text);
+            let bits = '';
+            for (const b of bytes) {
+                bits += b.toString(2).padStart(8, '0');
+            }
+            bits += END_MARKER_BITS;
+            return bits;
+        }
+
+        function bitsToText(bits) {
+            const endPos = bits.indexOf(END_MARKER_BITS);
+            const validBits = endPos === -1 ? bits : bits.substring(0, endPos);
+            if (validBits.length === 0 || validBits.length < 8) return '';
+            const bytes = [];
+            for (let i = 0; i < validBits.length; i += 8) {
+                if (i + 8 <= validBits.length) {
+                    bytes.push(parseInt(validBits.substring(i, i + 8), 2));
+                }
+            }
+            try {
+                const decoder = new TextDecoder('utf-8');
+                return decoder.decode(new Uint8Array(bytes));
+            } catch {
+                return '';
+            }
+        }
+
+        // ----- 从图片提取像素 -----
+        function getImageDataFromFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0);
+                        try {
+                            const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                            resolve(data);
+                        } catch (err) {
+                            reject('无法读取图片像素数据（跨域或格式问题）');
+                        }
+                    };
+                    img.onerror = () => reject('图片加载失败，请确认文件是 PNG 或 BMP 格式');
+                    img.src = e.target.result;
+                };
+                reader.onerror = () => reject('文件读取失败');
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // ----- 将 bits 写入 ImageData -----
+        function bitsToImageData(imageData, bits) {
+            const pixels = imageData.data;
+            const totalBits = pixels.length;
+            if (bits.length > totalBits) {
+                throw new Error(`图片容量不足：需要 ${bits.length} 位，最多 ${totalBits} 位。请使用更大的图片。`);
+            }
+            for (let i = 0; i < bits.length; i++) {
+                pixels[i] = (pixels[i] & 0xFE) | parseInt(bits[i]);
+            }
+            return imageData;
+        }
+
+        // ----- 从 ImageData 提取 bits -----
+        function imageDataToBits(imageData) {
+            const pixels = imageData.data;
+            let bits = '';
+            for (let i = 0; i < pixels.length; i++) {
+                bits += (pixels[i] & 1).toString();
+            }
+            return bits;
+        }
+
+        // ===== BMP 编码器 =====
+        // 将 ImageData 编码为标准 Windows BMP 24-bit 格式
+        function encodeBMP(imageData) {
+            const width = imageData.width;
+            const height = imageData.height;
+            const pixels = imageData.data;
+
+            // BMP 每行必须 4 字节对齐
+            const rowSize = Math.floor((width * 3 + 3) / 4) * 4;
+            const pixelDataSize = rowSize * height;
+            const fileSize = 54 + pixelDataSize; // 14 (file header) + 40 (DIB header)
+
+            const buffer = new ArrayBuffer(fileSize);
+            const view = new DataView(buffer);
+            let offset = 0;
+
+            // ---- BMP 文件头 (14 bytes) ----
+            // bfType: 'BM'
+            view.setUint8(offset++, 0x42); // 'B'
+            view.setUint8(offset++, 0x4D); // 'M'
+            // bfSize: 文件总大小 (4 bytes, LE)
+            view.setUint32(offset, fileSize, true); offset += 4;
+            // bfReserved1 + bfReserved2 (4 bytes)
+            view.setUint32(offset, 0, true); offset += 4;
+            // bfOffBits: 像素数据偏移量 (4 bytes, LE) = 54
+            view.setUint32(offset, 54, true); offset += 4;
+
+            // ---- DIB 信息头 BITMAPINFOHEADER (40 bytes) ----
+            // biSize: 信息头大小
+            view.setUint32(offset, 40, true); offset += 4;
+            // biWidth
+            view.setInt32(offset, width, true); offset += 4;
+            // biHeight: 正数 = 从下到上排列
+            view.setInt32(offset, height, true); offset += 4;
+            // biPlanes: 必须为 1
+            view.setUint16(offset, 1, true); offset += 2;
+            // biBitCount: 24-bit
+            view.setUint16(offset, 24, true); offset += 2;
+            // biCompression: BI_RGB = 0
+            view.setUint32(offset, 0, true); offset += 4;
+            // biSizeImage: 像素数据大小
+            view.setUint32(offset, pixelDataSize, true); offset += 4;
+            // biXPelsPerMeter: 72 DPI ≈ 2835 pixels/meter
+            view.setInt32(offset, 2835, true); offset += 4;
+            // biYPelsPerMeter: 72 DPI
+            view.setInt32(offset, 2835, true); offset += 4;
+            // biClrUsed
+            view.setUint32(offset, 0, true); offset += 4;
+            // biClrImportant
+            view.setUint32(offset, 0, true); offset += 4;
+
+            // ---- 像素数据（从下到上，BGR 顺序，每行 4 字节对齐） ----
+            for (let y = height - 1; y >= 0; y--) {
+                const rowStart = y * width * 4; // ImageData 每像素 4 字节 (RGBA)
+                let rowOffset = 0;
+                for (let x = 0; x < width; x++) {
+                    const pixelOffset = rowStart + x * 4;
+                    // BMP: B G R 顺序
+                    view.setUint8(offset + rowOffset, pixels[pixelOffset + 2]);     // B
+                    view.setUint8(offset + rowOffset + 1, pixels[pixelOffset + 1]); // G
+                    view.setUint8(offset + rowOffset + 2, pixels[pixelOffset]);     // R
+                    rowOffset += 3;
+                }
+                // 行填充到 4 字节边界
+                while (rowOffset < rowSize) {
+                    view.setUint8(offset + rowOffset, 0);
+                    rowOffset++;
+                }
+                offset += rowSize;
+            }
+
+            return new Blob([buffer], { type: 'image/bmp' });
+        }
+
+        // ===== 拖拽上传 =====
+        function setupDragDrop(uploadArea, fileInput, onFileCallback, acceptCheck) {
+            let dragCounter = 0;
+
+            uploadArea.addEventListener('dragenter', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dragCounter++;
+                uploadArea.classList.add('dragover');
+            });
+
+            uploadArea.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dragCounter--;
+                if (dragCounter <= 0) {
+                    dragCounter = 0;
+                    uploadArea.classList.remove('dragover');
+                }
+            });
+
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                // 设置拖拽效果
+                e.dataTransfer.dropEffect = 'copy';
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dragCounter = 0;
+                uploadArea.classList.remove('dragover');
+
+                const files = e.dataTransfer.files;
+                if (files.length === 0) return;
+
+                const file = files[0];
+
+                // 验证文件类型
+                const isValid = acceptCheck ? acceptCheck(file) :
+                    (file.type === 'image/png' || file.type === 'image/bmp' ||
+                     /\.(png|bmp)$/i.test(file.name));
+
+                if (!isValid) {
+                    alert('⚠️ 请拖入 PNG 或 BMP 格式的图片文件');
+                    return;
+                }
+
+                // 同步到隐藏的 file input
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                fileInput.files = dt.files;
+
+                // 触发回调
+                onFileCallback(file);
+            });
+        }
+
+        // 阻止浏览器默认的拖拽行为（防止浏览器直接打开图片）
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            document.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            }, false);
+        });
+
+        // ===== 加密面板逻辑 =====
+        let encFile = null;
+
+        function onEncFile(file) {
+            if (!file) return;
+            encFile = file;
+            const reader = new FileReader();
+            reader.onload = e => {
+                document.getElementById('enc-preview-img').src = e.target.result;
+                document.getElementById('enc-preview').style.display = 'block';
+                document.getElementById('enc-fname').textContent = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+                document.getElementById('enc-upload').classList.add('has-image');
+                document.getElementById('enc-upload').querySelector('p').textContent = '已选择: ' + file.name;
+                checkEncReady();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function checkEncReady() {
+            const text = document.getElementById('enc-text').value.trim();
+            document.getElementById('enc-btn').disabled = !(encFile && text);
+        }
+
+        document.getElementById('enc-text').addEventListener('input', checkEncReady);
+
+        // 输出格式切换时自动更新文件名后缀
+        function onFormatChange() {
+            const format = document.getElementById('enc-format').value;
+            const nameInput = document.getElementById('enc-outname');
+            const currentName = nameInput.value.trim() || 'output';
+            // 去掉旧后缀
+            const baseName = currentName.replace(/\.(png|bmp)$/i, '');
+            nameInput.value = baseName + '.' + format;
+        }
+
+        async function doEncode() {
+            const text = document.getElementById('enc-text').value.trim();
+            if (!text || !encFile) return;
+
+            const btn = document.getElementById('enc-btn');
+            const loading = document.getElementById('enc-loading');
+            const result = document.getElementById('enc-result');
+            btn.disabled = true;
+            loading.style.display = 'block';
+            result.style.display = 'none';
+
+            setTimeout(async () => {
+                try {
+                    const imageData = await getImageDataFromFile(encFile);
+                    const bits = textToBits(text);
+                    const newData = bitsToImageData(imageData, bits);
+
+                    const format = document.getElementById('enc-format').value;
+                    const outName = document.getElementById('enc-outname').value.trim() || ('output.' + format);
+
+                    const link = document.createElement('a');
+                    link.download = outName;
+
+                    if (format === 'bmp') {
+                        // BMP 输出：手动编码 BMP 文件
+                        const bmpBlob = encodeBMP(newData);
+                        link.href = URL.createObjectURL(bmpBlob);
+                    } else {
+                        // PNG 输出：使用 Canvas
+                        const canvas = document.createElement('canvas');
+                        canvas.width = newData.width;
+                        canvas.height = newData.height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.putImageData(newData, 0, 0);
+                        link.href = canvas.toDataURL('image/png');
+                    }
+
+                    link.click();
+
+                    // 清理 BMP blob URL
+                    if (format === 'bmp') {
+                        setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+                    }
+
+                    result.className = 'result-box';
+                    result.innerHTML = `
+                <div class="label">✅ 加密成功！已下载：${outName}</div>
+                <div style="margin-top:8px;font-size:13px;color:#555;">
+                    隐藏文本：${text.length > 50 ? text.substring(0, 50) + '...' : text}<br>
+                    输出格式：${format.toUpperCase()}　|　共写入 ${bits.length} 位
+                </div>
+            `;
+                    result.style.display = 'block';
+                } catch (err) {
+                    result.className = 'result-box error';
+                    result.innerHTML = `<div class="label">❌ 加密失败</div><div style="margin-top:4px;color:#c5221f;">${err.message || err}</div>`;
+                    result.style.display = 'block';
+                }
+                loading.style.display = 'none';
+                btn.disabled = false;
+            }, 50);
+        }
+
+        // ===== 解密面板逻辑 =====
+        let decFile = null;
+
+        function onDecFile(file) {
+            if (!file) return;
+            decFile = file;
+            const reader = new FileReader();
+            reader.onload = e => {
+                document.getElementById('dec-preview-img').src = e.target.result;
+                document.getElementById('dec-preview').style.display = 'block';
+                document.getElementById('dec-fname').textContent = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+                document.getElementById('dec-upload').classList.add('has-image');
+                document.getElementById('dec-upload').querySelector('p').textContent = '已选择: ' + file.name;
+                document.getElementById('dec-btn').disabled = false;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function doDecode() {
+            if (!decFile) return;
+
+            const btn = document.getElementById('dec-btn');
+            const loading = document.getElementById('dec-loading');
+            const result = document.getElementById('dec-result');
+            btn.disabled = true;
+            loading.style.display = 'block';
+            result.style.display = 'none';
+
+            setTimeout(async () => {
+                try {
+                    const imageData = await getImageDataFromFile(decFile);
+                    const bits = imageDataToBits(imageData);
+                    const text = bitsToText(bits);
+
+                    if (text) {
+                        result.className = 'result-box';
+                        result.innerHTML = `
+                    <div class="label">✅ 提取成功！密码为：</div>
+                    <div class="content" id="decode-result-text">${text}</div>
+                    <button class="copy-btn" onclick="copyDecodeResult()">📋 复制密码</button>
+                    <div style="margin-top:6px;font-size:12px;color:#888;">已同时保存到 extracted.txt</div>
+                `;
+                        result.style.display = 'block';
+                        // 保存到文件下载
+                        const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+                        const link = document.createElement('a');
+                        link.download = 'extracted.txt';
+                        link.href = URL.createObjectURL(blob);
+                        link.click();
+                    } else {
+                        result.className = 'result-box error';
+                        result.innerHTML = `<div class="label">⚠️ 未在图片中发现隐藏内容</div>
+                    <div style="margin-top:4px;color:#666;font-size:13px;">
+                        可能原因：<br>
+                        • 图片未嵌入数据<br>
+                        • 图片被修改（缩放/转换格式）<br>
+                        • 图片是 JPEG 格式（不支持）
+                    </div>`;
+                        result.style.display = 'block';
+                    }
+                } catch (err) {
+                    result.className = 'result-box error';
+                    result.innerHTML = `<div class="label">❌ 提取失败</div><div style="margin-top:4px;color:#c5221f;">${err.message || err}</div>`;
+                    result.style.display = 'block';
+                }
+                loading.style.display = 'none';
+                btn.disabled = false;
+            }, 50);
+        }
+
+        function copyDecodeResult() {
+            const text = document.getElementById('decode-result-text').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.querySelector('.copy-btn');
+                btn.textContent = '✅ 已复制';
+                setTimeout(() => { btn.textContent = '📋 复制密码'; }, 2000);
+            });
+        }
+
+        // ===== 初始化拖拽上传 =====
+        setupDragDrop(
+            document.getElementById('enc-upload'),
+            document.getElementById('enc-file'),
+            onEncFile
+        );
+
+        setupDragDrop(
+            document.getElementById('dec-upload'),
+            document.getElementById('dec-file'),
+            onDecFile
+        );
+    </script>
+</body>
+
+</html>
